@@ -98,27 +98,28 @@ namespace Hospital_management.Controllers
 
             return NoContent();
         }
-       
+
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<Practitioner>>> SearchPractitioners([FromQuery] string name, [FromQuery] string specialization)
+        public async Task<ActionResult<IEnumerable<Practitioner>>> SearchPractitioners([FromQuery] string name, [FromQuery] string specialty)
         {
-            var query = _context.Practitioners.AsQueryable();
+            IQueryable<Practitioner> query = _context.Practitioners;
 
             if (!string.IsNullOrEmpty(name))
             {
-                query = query.Where(p => p.FirstName.Contains(name)); 
+                // Use EF.Functions.Like for pattern matching in SQL
+                query = query.Where(p => EF.Functions.Like(p.FirstName, $"%{name}%"));
             }
 
-            if (!string.IsNullOrEmpty(specialization))
+            if (!string.IsNullOrEmpty(specialty))
             {
-                query = query.Where(p => p.Specialization.Contains(specialization)); 
+                query = query.Where(p => EF.Functions.Like(p.Specialization, $"%{specialty}%"));
             }
 
             var practitioners = await query.ToListAsync();
 
-            if (practitioners == null || !practitioners.Any())
+            if (practitioners == null || practitioners.Count == 0)
             {
-                return NotFound("No practitioners found matching the search criteria.");
+                return NotFound();
             }
 
             return practitioners;

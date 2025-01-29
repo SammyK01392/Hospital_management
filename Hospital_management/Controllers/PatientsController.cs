@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Hospital_management.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Hospital_management.Controllers
 {
@@ -14,10 +18,12 @@ namespace Hospital_management.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly HealthcareDbContext _context;
+        private readonly IConfiguration configuration;
 
-        public PatientsController(HealthcareDbContext context)
+        public PatientsController(HealthcareDbContext context, IConfiguration configuration)
         {
             _context = context;
+            this.configuration = configuration;
         }
 
         // GET: api/Patients
@@ -103,5 +109,37 @@ namespace Hospital_management.Controllers
         {
             return _context.Patients.Any(e => e.PatientId == id);
         }
+
+        [HttpPost]
+        [Route("Login")]
+        public IActionResult Login(PatientLoginModel loginDTO)
+        {
+            var user = _context.Patients.FirstOrDefault(x => x.FirstName == loginDTO.Name && x.Phone == loginDTO.Phone);
+            if (user != null)
+            {
+                var claims = new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, configuration["Jwt:Subject"]),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim("PatientId", user.PatientId.ToString()),
+                    new Claim("FirstName", user.FirstName)
+                };
+
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
+                var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                var token = new JwtSecurityToken(
+                    configuration["Jwt:Issuer"],
+                    configuration["Jwt:Audience"],
+                    claims,
+                    expires: DateTime.UtcNow.AddMinutes(60),
+                    signingCredentials: signIn
+                );
+
+                string tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
+                return Ok(new { Token = tokenValue, User = user });
+            }
+            return Unauthorized();
+        }
+
     }
 }

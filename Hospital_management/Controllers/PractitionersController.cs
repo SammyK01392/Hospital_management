@@ -98,6 +98,32 @@ namespace Hospital_management.Controllers
 
             return NoContent();
         }
+       
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<Practitioner>>> SearchPractitioners([FromQuery] string name, [FromQuery] string specialization)
+        {
+            var query = _context.Practitioners.AsQueryable();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                query = query.Where(p => p.FirstName.Contains(name)); 
+            }
+
+            if (!string.IsNullOrEmpty(specialization))
+            {
+                query = query.Where(p => p.Specialization.Contains(specialization)); 
+            }
+
+            var practitioners = await query.ToListAsync();
+
+            if (practitioners == null || !practitioners.Any())
+            {
+                return NotFound("No practitioners found matching the search criteria.");
+            }
+
+            return practitioners;
+        }
+
 
         private bool PractitionerExists(int id)
         {

@@ -98,6 +98,31 @@ namespace Hospital_management.Controllers
 
             return NoContent();
         }
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<Hospital>>> SearchHospitals([FromQuery] string name, [FromQuery] string city)
+        {
+            var query = _context.Hospitals.AsQueryable();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                query = query.Where(h => h.Name.ToLower().Contains(name.ToLower()));
+            }
+
+            if (!string.IsNullOrEmpty(city))
+            {
+                query = query.Where(h => h.City.ToLower().Contains(city.ToLower()));
+            }
+
+            var hospitals = await query.ToListAsync();
+
+            if (!hospitals.Any())
+            {
+                return NotFound("No hospitals found matching the search criteria.");
+            }
+
+            return Ok(hospitals); // Return filtered results
+        }
+
 
         private bool HospitalExists(int id)
         {

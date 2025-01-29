@@ -83,7 +83,7 @@ namespace Hospital_management.Controllers
             return CreatedAtAction("GetHospital", new { id = hospital.HospitalId }, hospital);
         }
 
-        // DELETE: api/Hospitals/5
+        // DELETE: api/Hospitals/5   .
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteHospital(int id)
         {
